@@ -1,0 +1,180 @@
+from qwen_vl_utils import process_vision_info
+from transformers import Qwen2_5_VLForConditionalGeneration, AutoProcessor
+import json
+import os
+from tqdm import tqdm
+
+def calculate_f1_score(real_corr_count, real_idx, imp_corr_count, imp_idx):
+
+    tp = real_corr_count
+    fn = real_idx - real_corr_count
+    fp = imp_idx - imp_corr_count
+    
+
+    epsilon = 1e-7
+    precision = tp / (tp + fp + epsilon)
+    
+
+    recall = tp / (tp + fn + epsilon)
+    
+
+    f1_score = 2 * (precision * recall) / (precision + recall + epsilon)
+    
+    return {
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score
+    }
+if __name__ == '__main__':
+    impossibe_video_root = './Data/pid_test/neg'
+    real_video_root = './Data/pid_test/pos'
+    
+    prompt = 'Given the video content, evaluate whether the depicted motion of objects or individuals adheres to the real world.'
+    output_path = './res/res_on_pid_test.json'
+
+
+    res = {}
+    model_path = 'PATH_TO_THE_PHYDETEX'
+
+
+
+    
+    model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+        model_path, torch_dtype="auto", device_map="auto"
+    )
+    processor = AutoProcessor.from_pretrained(model_path)
+
+    impossibe_videos = os.listdir(impossibe_video_root)
+
+    fps=4
+    # Messages containing a local video path and a text query
+    imp_idx = 0
+    output_freq = 10
+    res_impossible = {}
+    imp_corr_count = 0
+    for video in tqdm(impossibe_videos):
+        video_path = os.path.join(impossibe_video_root, video)
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "video",
+                        "video": video_path,
+                        "max_pixels": 360 * 420,
+                        "fps": fps,
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+
+
+        # Preparation for inference
+        text = processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, video_inputs, video_kwargs = process_vision_info(messages, return_video_kwargs=True)
+        inputs = processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            # fps=fps,
+            padding=True,
+            return_tensors="pt",
+            **video_kwargs,
+        )
+        inputs = inputs.to("cuda")
+
+        # Inference
+        generated_ids = model.generate(**inputs, max_new_tokens=128,temperature=0, do_sample=False)
+        # generated_ids = model.generate(**inputs, max_new_tokens=128)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+
+        print(output_text[0])
+        if output_text[0].lower().startswith(('no')):
+            imp_corr_count += 1
+
+
+        res_impossible[video] = output_text[0]
+        imp_idx += 1
+        res['imp_videos_res'] = res_impossible
+
+        if imp_idx % output_freq==0:
+            json.dump(res, open(output_path, "w"))
+
+
+
+    real_idx = 0
+    output_freq = 10
+    res_real = {}
+    real_corr_count = 0
+    real_videos = os.listdir(real_video_root)
+    for video in tqdm(real_videos):
+        
+        video_path = os.path.join(real_video_root, video)
+        print('The Video Path:', video_path)
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "video",
+                        "video": video_path,
+                        "max_pixels": 360 * 420,
+                        "fps": fps,
+                    },
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+
+
+        # Preparation for inference
+        text = processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, video_inputs, video_kwargs = process_vision_info(messages, return_video_kwargs=True)
+        inputs = processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            # fps=fps,
+            padding=True,
+            return_tensors="pt",
+            **video_kwargs,
+        )
+        inputs = inputs.to("cuda")
+
+        # Inference
+        generated_ids = model.generate(**inputs, max_new_tokens=128,temperature=0, do_sample=False)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        output_text = processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        print(output_text[0])
+        if output_text[0].lower().startswith(('yes')):
+            real_corr_count += 1
+
+
+        res_real[video] = output_text[0]
+        real_idx += 1
+        if real_idx % output_freq==0:
+            res['real_videos_res'] = res_real
+            json.dump(res, open(output_path, "w"))
+    res['acc_impossible'] = imp_corr_count/imp_idx
+    res['acc_real'] = real_corr_count/real_idx
+
+    f1_results = calculate_f1_score(real_corr_count, real_idx, imp_corr_count, imp_idx)
+
+
+    res.update(f1_results)
+    json.dump(res, open(output_path, "w"))
+

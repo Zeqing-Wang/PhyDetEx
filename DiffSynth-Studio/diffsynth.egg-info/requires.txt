@@ -1,0 +1,13 @@
+controlnet-aux==0.0.7
+cupy-cuda12x
+einops
+ftfy
+imageio
+imageio[ffmpeg]
+modelscope
+protobuf
+safetensors
+sentencepiece
+torch>=2.0.0
+torchvision
+transformers==4.46.2
