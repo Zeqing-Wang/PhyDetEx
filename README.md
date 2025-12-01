@@ -1,4 +1,4 @@
-# <img src="assets/logo.png" width="60px" align="center"> PhyDetEx: Detecting and Explaining the Physical Plausibility of T2V Models
+# PhyDetEx: Detecting and Explaining the Physical Plausibility of T2V Models
 
 Official repository for the paper ["VideoVerse: How Far is Your T2V Generator from a World Model?"](https://arxiv.org/abs/2510.08398).
 
