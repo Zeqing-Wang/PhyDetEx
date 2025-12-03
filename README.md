@@ -1,8 +1,8 @@
 # PhyDetEx: Detecting and Explaining the Physical Plausibility of T2V Models
 
-Official repository for the paper ["VideoVerse: How Far is Your T2V Generator from a World Model?"](https://arxiv.org/abs/2510.08398).
+Official repository for the paper ["PhyDetEx: Detecting and Explaining the Physical Plausibility of T2V Models"](https://arxiv.org/abs/2512.01843).
 
-[📖 Paper]( ) [🤗 PID Dataset](https://huggingface.co/datasets/NNaptmn/PhyDetExDatasets) [🤗 PhyDetEx Model](https://huggingface.co/NNaptmn/PhyDetEx) 
+[📖 Paper](https://arxiv.org/abs/2512.01843) [🤗 PID Dataset](https://huggingface.co/datasets/NNaptmn/PhyDetExDatasets) [🤗 PhyDetEx Model](https://huggingface.co/NNaptmn/PhyDetEx) 
 
 ## 🔥 News
 - **[2025.12.01]** 🔥 We release the PID Dataset and the PhyDetEx Model!
@@ -74,7 +74,15 @@ We heavily borrow the data and code from ImpossibleVideos, and LLaMA-Factory. Th
 If you find the code useful for your work, please star this repo and consider citing:
 
 ```bibtex
-
+@misc{wang2025phydetexdetectingexplainingphysical,
+      title={PhyDetEx: Detecting and Explaining the Physical Plausibility of T2V Models}, 
+      author={Zeqing Wang and Keze Wang and Lei Zhang},
+      year={2025},
+      eprint={2512.01843},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2512.01843}, 
+}
 ```
 
 ## 🙋‍♂️ Questions?
